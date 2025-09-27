@@ -5,6 +5,7 @@ export interface CryptoKey {
   algorithm: string;
   is_hsm_backed: boolean;
   rotation_enabled: boolean;
+  permission_policy: string;
 }
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
