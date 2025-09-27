@@ -69,3 +69,11 @@ tbody tr:nth-of-type(even) {
 tbody tr:hover {
   background-color: #4a4a4a;
 }
+
+/* Add this to the bottom of src/App.css */
+.score-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+}

@@ -19,3 +19,21 @@ export async function fetchKeys(): Promise<CryptoKey[]> {
   const data = await response.json();
   return data.keys;
 }
+
+// Add this new function to the bottom of the file
+export async function fetchVulnerabilityScore(key: CryptoKey): Promise<number> {
+  const response = await fetch(`${API_BASE_URL}/predict_vulnerability`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(key),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch vulnerability score.');
+  }
+
+  const data = await response.json();
+  return data.predicted_vulnerability_score;
+}

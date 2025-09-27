@@ -1,23 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { type CryptoKey, fetchKeys } from '../components/api';
+import { fetchKeys, fetchVulnerabilityScore, type CryptoKey } from '../components/api';
 import KeyTable from '../components/KeyTable';
 
+// Define the updated type here as well
+interface CryptoKeyWithScore extends CryptoKey {
+  vulnerability_score?: number | string;
+}
+
 const InventoryPage: React.FC = () => {
-  const [keys, setKeys] = useState<CryptoKey[]>([]);
+  const [keys, setKeys] = useState<CryptoKeyWithScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchKeys()
-      .then(fetchedKeys => {
-        setKeys(fetchedKeys);
-      })
-      .catch(err => {
-        setError(err.message);
-      })
-      .finally(() => {
+    async function loadAndScoreKeys() {
+      try {
+        // Step 1: Fetch the initial list of keys
+        const initialKeys = await fetchKeys();
+        // Initially, display keys without scores
+        setKeys(initialKeys);
+        setIsLoading(false); // Stop initial loading
+
+        // Step 2: Asynchronously fetch scores for each key
+        const scoredKeys = await Promise.all(
+          initialKeys.map(async (key) => {
+            try {
+              const score = await fetchVulnerabilityScore(key);
+              return { ...key, vulnerability_score: score };
+            } catch (error) {
+              console.error(`Failed to get score for key ${key.key_id}`, error);
+              return { ...key, vulnerability_score: 'Error' };
+            }
+          })
+        );
+        
+        // Step 3: Update the state with the new keys that include scores
+        setKeys(scoredKeys);
+
+      } catch (err) {
+        if (err instanceof Error) setError(err.message);
         setIsLoading(false);
-      });
+      }
+    }
+
+    loadAndScoreKeys();
   }, []);
 
   return (
@@ -27,7 +53,7 @@ const InventoryPage: React.FC = () => {
         <p>A detailed list of all monitored cryptographic keys.</p>
       </header>
       <main>
-        {isLoading && <p className="loading-text">Loading keys from API...</p>}
+        {isLoading && <p className="loading-text">Loading key inventory...</p>}
         {error && <p className="error-text">{error}</p>}
         {!isLoading && !error && (
           <KeyTable keys={keys} />
