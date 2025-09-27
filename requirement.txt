@@ -1,2 +1,6 @@
 fastapi[all]
 pydantic
+joblib
+pandas
+xgboost
+scikit-learn
