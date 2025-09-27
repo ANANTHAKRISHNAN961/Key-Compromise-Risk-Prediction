@@ -5,7 +5,7 @@ from sklearn.metrics import mean_absolute_error
 from datetime import datetime
 import joblib
 
-def train_srae_model(dataset_path='../Dataset/key_inventory_labeled.csv'):
+def train_srae_model(dataset_path='../../data/key_inventory_labeled.csv'):
     """
     Loads the dataset, engineers features, trains the SRAE AI model,
     evaluates its performance, and saves the trained model to a file.
@@ -62,7 +62,7 @@ def train_srae_model(dataset_path='../Dataset/key_inventory_labeled.csv'):
     print(f"  > Mean Absolute Error (MAE): {mae:.2f}")
 
     # 6. Save the Trained Model to a File
-    model_filename = 'srae_model.joblib'
+    model_filename = '../../models/srae_model.joblib'
     print(f"Step 6: Saving the trained model to '{model_filename}'...")
     joblib.dump(model, model_filename)
 

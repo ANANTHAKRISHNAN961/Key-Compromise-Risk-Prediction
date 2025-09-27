@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # --- Configuration ---
 NUM_RECORDS = 10000
-OUTPUT_FILE = 'key_inventory_labeled.csv'
+OUTPUT_FILE = '../../data/key_inventory_labeled.csv'
 
 # --- (IMPROVED) Helper Functions to create diverse data ---
 def get_random_date():

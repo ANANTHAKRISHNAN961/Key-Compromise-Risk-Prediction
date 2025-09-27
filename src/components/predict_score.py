@@ -42,7 +42,7 @@ def prepare_dataframe(df):
     return df[all_feature_cols]
 # --- Main Prediction Logic ---
 if __name__ == "__main__":
-    MODEL_FILE = 'Model/srae_model.joblib'
+    MODEL_FILE = '../../models/srae_model.joblib'
     NEW_DATA_FILE = 'new_keys_to_predict.csv'
     
     try:
