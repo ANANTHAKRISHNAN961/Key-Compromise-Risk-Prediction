@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware 
 import joblib
 import pandas as pd
 from datetime import datetime
@@ -7,7 +8,20 @@ import json
 
 # Initialize the FastAPI app
 app = FastAPI(title="SRAE - Static Risk Assessment Engine API")
+# --- CORS MIDDLEWARE SETUP ---
+# This allows your React frontend to communicate with your API
+origins = [
+    "http://localhost:5173", # The default port for Vite React apps
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# -----------------------------
 # --- Load the trained model once when the API starts ---
 try:
     model = joblib.load('../../models/srae_model.joblib')
