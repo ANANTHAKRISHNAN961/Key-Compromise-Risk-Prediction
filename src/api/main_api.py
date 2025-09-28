@@ -140,7 +140,18 @@ def get_scored_logs(page: int = 1, limit: int = 50):
     prepared_data = dtde_preprocessor.transform(df_page)
     raw_scores = dtde_model.score_samples(prepared_data)
     
-    normalized_scores = -1 * raw_scores * 100 + 50
+    # A more balanced normalization: scale scores to a 0-100 range
+    # We'll establish a baseline and scale based on deviation from the mean
+    mean_score = raw_scores.mean()
+    std_dev = raw_scores.std()
+    
+    # Normalize using a Z-score-like approach, then scale to 0-100
+    # This centers the "average" log around a score of 20-30
+    if std_dev > 0:
+        normalized_scores = 50 + (raw_scores - mean_score) / std_dev * 25
+    else:
+        normalized_scores = pd.Series([50] * len(raw_scores)) # Handle case with no deviation
+        
     final_scores = pd.Series(normalized_scores).clip(0, 100).round().astype(int)
     
     df_page = df_page.assign(anomaly_score=final_scores.values)
