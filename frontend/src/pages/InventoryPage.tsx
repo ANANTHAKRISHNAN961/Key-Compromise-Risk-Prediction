@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { fetchKeys, fetchVulnerabilityScore, type CryptoKey } from '../components/api';
+import { fetchKeys, fetchVulnerabilityScore, getRecommendedAction } from '../components/api';
 import KeyTable from '../components/KeyTable';
+import type { CryptoKeyWithScore } from '../types';
 
-// Define the updated type here as well
-interface CryptoKeyWithScore extends CryptoKey {
-  vulnerability_score?: number | string;
-}
 
 const InventoryPage: React.FC = () => {
   const [keys, setKeys] = useState<CryptoKeyWithScore[]>([]);
@@ -15,13 +12,10 @@ const InventoryPage: React.FC = () => {
   useEffect(() => {
     async function loadAndScoreKeys() {
       try {
-        // Step 1: Fetch the initial list of keys
         const initialKeys = await fetchKeys();
-        // Initially, display keys without scores
-        setKeys(initialKeys);
-        setIsLoading(false); // Stop initial loading
+        setKeys(initialKeys.map(key => ({ ...key, vulnerability_score: '...' })));
+        setIsLoading(false);
 
-        // Step 2: Asynchronously fetch scores for each key
         const scoredKeys = await Promise.all(
           initialKeys.map(async (key) => {
             try {
@@ -34,7 +28,6 @@ const InventoryPage: React.FC = () => {
           })
         );
         
-        // Step 3: Update the state with the new keys that include scores
         setKeys(scoredKeys);
 
       } catch (err) {
@@ -46,17 +39,46 @@ const InventoryPage: React.FC = () => {
     loadAndScoreKeys();
   }, []);
 
+  const handleGetAction = async (keyId: string) => {
+    const key = keys.find(k => k.key_id === keyId);
+    if (!key || typeof key.vulnerability_score !== 'number') return;
+
+    // Set loading state for this specific key
+    setKeys(currentKeys =>
+      currentKeys.map(k =>
+        k.key_id === keyId ? { ...k, recommended_action: 'Loading...' } : k
+      )
+    );
+
+    try {
+      const response = await getRecommendedAction({ vulnerability_score: key.vulnerability_score });
+      setKeys(currentKeys =>
+        currentKeys.map(k =>
+          k.key_id === keyId ? { ...k, recommended_action: response.recommended_action } : k
+        )
+      );
+    } catch (error) {
+      console.error("Failed to get recommended action", error);
+      setKeys(currentKeys =>
+        currentKeys.map(k =>
+          k.key_id === keyId ? { ...k, recommended_action: 'Error' } : k
+        )
+      );
+    }
+  };
+
+
   return (
     <div className="container">
       <header>
         <h1>Key Inventory</h1>
-        <p>A detailed list of all monitored cryptographic keys.</p>
+        <p>A detailed list of all monitored cryptographic keys and their AI-driven risk assessments.</p>
       </header>
       <main>
         {isLoading && <p className="loading-text">Loading key inventory...</p>}
         {error && <p className="error-text">{error}</p>}
         {!isLoading && !error && (
-          <KeyTable keys={keys} />
+          <KeyTable keys={keys} onGetAction={handleGetAction} />
         )}
       </main>
     </div>

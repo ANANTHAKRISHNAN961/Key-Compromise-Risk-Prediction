@@ -9,6 +9,7 @@ export interface CryptoKey {
 
 export interface CryptoKeyWithScore extends CryptoKey {
   vulnerability_score?: number | string;
+  recommended_action?: string;
 }
 
 export interface LogEntry {
@@ -24,4 +25,5 @@ export interface LogEntry {
 
 export interface LogEntryWithScore extends LogEntry {
   anomaly_score?: number;
+  recommended_action?: string;
 }

@@ -5,3 +5,6 @@ pandas
 xgboost
 scikit-learn
 faker
+gymnasium
+stable-baselines3[extra]
+torch

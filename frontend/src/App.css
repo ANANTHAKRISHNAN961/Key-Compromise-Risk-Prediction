@@ -77,3 +77,48 @@ tbody tr:hover {
   font-weight: bold;
   font-size: 0.9em;
 }
+
+.action-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.action-button:hover {
+  background-color: #0056b3;
+}
+
+.action-button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.action-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  color: white;
+}
+
+.action-none {
+  background-color: #2a9d8f;
+}
+
+.action-mild {
+  background-color: #e9c46a;
+  color: black;
+}
+
+.action-moderate {
+  background-color: #f4a261;
+  color: black;
+}
+
+.action-severe {
+  background-color: #e76f51;
+}

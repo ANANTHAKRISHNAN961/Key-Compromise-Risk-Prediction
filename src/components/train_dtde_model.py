@@ -23,7 +23,7 @@ def train_dtde_model():
     # 3. Train the AI Model
     print("Step 3: Training the Isolation Forest model...")
     model = IsolationForest(n_estimators=100, contamination=0.02, random_state=42)
-    model.fit(features)
+        model.learn(total_timesteps=50000, progress_bar=True)
 
     # 4. Save the Model AND the FITTED Preprocessor
     print(f"Step 4: Saving the model and preprocessor to '{MODEL_FILE}'...")

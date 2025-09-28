@@ -38,3 +38,15 @@ export async function fetchScoredLogs(page: number): Promise<PaginatedLogsRespon
   }
   return await response.json();
 }
+
+export async function getRecommendedAction(riskInput: { vulnerability_score?: number; anomaly_score?: number }): Promise<{ recommended_action: string }> {
+  const response = await fetch(`${API_BASE_URL}/get_action`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(riskInput),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch recommended action.');
+  }
+  return await response.json();
+}
