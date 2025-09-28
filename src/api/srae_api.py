@@ -27,12 +27,21 @@ app.add_middleware(
 try:
     # IMPORTANT: Update this path to be correct relative to where you run uvicorn
     # If you run uvicorn from the root folder, this path is correct:
-    model = joblib.load('models/srae_model.joblib')
+    model = joblib.load('../../models/srae_model.joblib')
     print("Model loaded successfully!")
 except FileNotFoundError:
     model = None
     print("Error: Model file 'models/srae_model.joblib' not found.")
-
+# --- Load DTDE (Phase 2) Model & Columns ---
+try:
+    dtde_model = joblib.load('../../models/srae_dtde_model.joblib')
+    with open('../../models/srae_dtde_model_columns.json', 'r') as f:
+        dtde_model_columns = json.load(f)
+    print("DTDE model and columns loaded successfully!")
+except FileNotFoundError:
+    dtde_model = None
+    dtde_model_columns = None
+    print("Error: DTDE model or columns file not found in 'models/' folder.")
 
 # --- Define the input data structure for prediction ---
 class KeyConfiguration(BaseModel):
@@ -42,6 +51,15 @@ class KeyConfiguration(BaseModel):
     is_hsm_backed: bool
     rotation_enabled: bool
     permission_policy: str
+
+# --- DTDE Input Model ---
+class LogEntry(BaseModel):
+    eventTime: str
+    sourceIPAddress: str
+    userIdentity_arn: str
+    eventName: str
+    key_arn: str
+    errorCode: str = None # Optional field
 
 # --- (CORRECTED) Feature Engineering Function ---
 def prepare_input(key_data: KeyConfiguration):
@@ -71,6 +89,19 @@ def prepare_input(key_data: KeyConfiguration):
             
     return df[all_feature_cols]
 
+# --- DTDE Feature Engineering ---
+def prepare_dtde_input(df: pd.DataFrame):
+    df['eventTime'] = pd.to_datetime(df['eventTime'])
+    df['time_of_day'] = df['eventTime'].dt.hour
+    df = df.sort_values(by='eventTime')
+    df = df.set_index('eventTime')
+    df['api_call_frequency'] = df.groupby('userIdentity_arn')['key_arn'].transform(lambda x: x.rolling('1h').count())
+    df = df.reset_index()
+    df['errorCode'] = df['errorCode'].fillna('Success')
+    features_to_encode = ['sourceIPAddress', 'userIdentity_arn', 'eventName', 'key_arn', 'errorCode']
+    engineered_df = pd.get_dummies(df, columns=features_to_encode)
+    return engineered_df
+
 # --- API Endpoints ---
 @app.get("/")
 def read_root():
@@ -80,7 +111,7 @@ def read_root():
 def get_key_inventory():
     try:
         # IMPORTANT: Update this path
-        df = pd.read_csv('data/new_keys_to_predict.csv')
+        df = pd.read_csv('../../data/new_keys_to_predict.csv')
         keys = df.to_dict(orient='records')
         return {"keys": keys}
     except FileNotFoundError:
@@ -99,3 +130,22 @@ def predict_score(key_config: KeyConfiguration):
         # This will help debug future errors by showing them in the server logs
         print(f"Error during prediction: {e}")
         raise HTTPException(status_code=500, detail="Error during prediction.")
+    
+@app.post("/predict_anomaly")
+def predict_anomaly_score(log_entries: List[LogEntry]):
+    if dtde_model is None or dtde_model_columns is None:
+        raise HTTPException(status_code=503, detail="DTDE Model not loaded.")
+    try:
+        df = pd.DataFrame([entry.dict() for entry in log_entries])
+        prepared_data = prepare_dtde_input(df.copy())
+        aligned_data = prepared_data.reindex(columns=dtde_model_columns, fill_value=0)
+        
+        raw_scores = dtde_model.decision_function(aligned_data)
+        anomaly_scores_0_1 = 1 - (raw_scores - (-0.5)) / (0.5 - (-0.5))
+        scaled_scores = (anomaly_scores_0_1.clip(0, 1) * 99) + 1
+        df['PredictedAnomalyScore'] = scaled_scores.astype(int)
+        
+        return df.to_dict(orient='records')
+    except Exception as e:
+        print(f"Error during DTDE prediction: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during DTDE prediction: {e}")
